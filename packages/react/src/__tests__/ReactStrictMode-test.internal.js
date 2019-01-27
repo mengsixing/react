@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -12,6 +12,7 @@
 let React;
 let ReactFeatureFlags;
 let ReactTestRenderer;
+let PropTypes;
 
 describe('ReactStrictMode', () => {
   describe('debugRenderPhaseSideEffects', () => {
@@ -312,9 +313,9 @@ describe('ReactStrictMode', () => {
         UNSAFE_componentWillReceiveProps() {}
         render() {
           return (
-            <React.unstable_AsyncMode>
+            <React.unstable_ConcurrentMode>
               <AsyncRoot />
-            </React.unstable_AsyncMode>
+            </React.unstable_ConcurrentMode>
           );
         }
       }
@@ -356,6 +357,7 @@ describe('ReactStrictMode', () => {
         rendered = ReactTestRenderer.create(<SyncRoot />);
       }).toWarnDev(
         'Unsafe lifecycle methods were found within a strict-mode tree:' +
+          '\n    in ConcurrentMode (at **)' +
           '\n    in SyncRoot (at **)' +
           '\n\ncomponentWillMount: Please update the following components ' +
           'to use componentDidMount instead: AsyncRoot' +
@@ -379,9 +381,9 @@ describe('ReactStrictMode', () => {
         UNSAFE_componentWillReceiveProps() {}
         render() {
           return (
-            <React.unstable_AsyncMode>
+            <React.unstable_ConcurrentMode>
               <AsyncRoot />
-            </React.unstable_AsyncMode>
+            </React.unstable_ConcurrentMode>
           );
         }
       }
@@ -413,6 +415,7 @@ describe('ReactStrictMode', () => {
         () => (rendered = ReactTestRenderer.create(<SyncRoot />)),
       ).toWarnDev(
         'Unsafe lifecycle methods were found within a strict-mode tree:' +
+          '\n    in ConcurrentMode (at **)' +
           '\n    in SyncRoot (at **)' +
           '\n\ncomponentWillMount: Please update the following components ' +
           'to use componentDidMount instead: AsyncRoot, Parent' +
@@ -446,22 +449,22 @@ describe('ReactStrictMode', () => {
       class AsyncRootOne extends React.Component {
         render() {
           return (
-            <React.unstable_AsyncMode>
+            <React.unstable_ConcurrentMode>
               <Foo>
                 <Bar />
               </Foo>
-            </React.unstable_AsyncMode>
+            </React.unstable_ConcurrentMode>
           );
         }
       }
       class AsyncRootTwo extends React.Component {
         render() {
           return (
-            <React.unstable_AsyncMode>
+            <React.unstable_ConcurrentMode>
               <Foo>
                 <Baz />
               </Foo>
-            </React.unstable_AsyncMode>
+            </React.unstable_ConcurrentMode>
           );
         }
       }
@@ -490,12 +493,14 @@ describe('ReactStrictMode', () => {
         () => (rendered = ReactTestRenderer.create(<SyncRoot />)),
       ).toWarnDev([
         'Unsafe lifecycle methods were found within a strict-mode tree:' +
+          '\n    in ConcurrentMode (at **)' +
           '\n    in AsyncRootOne (at **)' +
           '\n    in div (at **)' +
           '\n    in SyncRoot (at **)' +
           '\n\ncomponentWillMount: Please update the following components ' +
           'to use componentDidMount instead: Bar, Foo',
         'Unsafe lifecycle methods were found within a strict-mode tree:' +
+          '\n    in ConcurrentMode (at **)' +
           '\n    in AsyncRootTwo (at **)' +
           '\n    in div (at **)' +
           '\n    in SyncRoot (at **)' +
@@ -512,9 +517,9 @@ describe('ReactStrictMode', () => {
       class AsyncRoot extends React.Component {
         render() {
           return (
-            <React.unstable_AsyncMode>
+            <React.unstable_ConcurrentMode>
               {this.props.foo ? <Foo /> : <Bar />}
-            </React.unstable_AsyncMode>
+            </React.unstable_ConcurrentMode>
           );
         }
       }
@@ -536,6 +541,7 @@ describe('ReactStrictMode', () => {
         rendered = ReactTestRenderer.create(<AsyncRoot foo={true} />);
       }).toWarnDev(
         'Unsafe lifecycle methods were found within a strict-mode tree:' +
+          '\n    in ConcurrentMode (at **)' +
           '\n    in AsyncRoot (at **)' +
           '\n\ncomponentWillMount: Please update the following components ' +
           'to use componentDidMount instead: Foo' +
@@ -545,6 +551,7 @@ describe('ReactStrictMode', () => {
 
       expect(() => rendered.update(<AsyncRoot foo={false} />)).toWarnDev(
         'Unsafe lifecycle methods were found within a strict-mode tree:' +
+          '\n    in ConcurrentMode (at **)' +
           '\n    in AsyncRoot (at **)' +
           '\n\ncomponentWillMount: Please update the following components ' +
           'to use componentDidMount instead: Bar' +
@@ -595,6 +602,7 @@ describe('ReactStrictMode', () => {
 
       expect(() => ReactTestRenderer.create(<SyncRoot />)).toWarnDev(
         'Unsafe lifecycle methods were found within a strict-mode tree:' +
+          '\n    in StrictMode (at **)' +
           '\n    in SyncRoot (at **)' +
           '\n\ncomponentWillReceiveProps: Please update the following components ' +
           'to use static getDerivedStateFromProps instead: Bar, Foo' +
@@ -751,9 +759,10 @@ describe('ReactStrictMode', () => {
       expect(() => {
         renderer = ReactTestRenderer.create(<OuterComponent />);
       }).toWarnDev(
-        'Warning: A string ref, "somestring", has been found within a strict mode tree. ' +
+        'Warning: A string ref, "somestring", has been found within a strict mode tree. ' +
           'String refs are a source of potential bugs and should be avoided. ' +
           'We recommend using createRef() instead.\n\n' +
+          '    in StrictMode (at **)\n' +
           '    in OuterComponent (at **)\n\n' +
           'Learn more about using refs safely here:\n' +
           'https://fb.me/react-strict-mode-string-ref',
@@ -792,10 +801,11 @@ describe('ReactStrictMode', () => {
       expect(() => {
         renderer = ReactTestRenderer.create(<OuterComponent />);
       }).toWarnDev(
-        'Warning: A string ref, "somestring", has been found within a strict mode tree. ' +
+        'Warning: A string ref, "somestring", has been found within a strict mode tree. ' +
           'String refs are a source of potential bugs and should be avoided. ' +
           'We recommend using createRef() instead.\n\n' +
           '    in InnerComponent (at **)\n' +
+          '    in StrictMode (at **)\n' +
           '    in OuterComponent (at **)\n\n' +
           'Learn more about using refs safely here:\n' +
           'https://fb.me/react-strict-mode-string-ref',
@@ -803,6 +813,100 @@ describe('ReactStrictMode', () => {
 
       // Dedup
       renderer.update(<OuterComponent />);
+    });
+  });
+
+  describe('context legacy', () => {
+    beforeEach(() => {
+      jest.resetModules();
+      React = require('react');
+      ReactTestRenderer = require('react-test-renderer');
+      PropTypes = require('prop-types');
+    });
+
+    it('should warn if the legacy context API have been used in strict mode', () => {
+      class LegacyContextProvider extends React.Component {
+        getChildContext() {
+          return {color: 'purple'};
+        }
+
+        render() {
+          return (
+            <div>
+              <LegacyContextConsumer />
+              <FunctionalLegacyContextConsumer />
+              <FactoryLegacyContextConsumer />
+            </div>
+          );
+        }
+      }
+
+      function FunctionalLegacyContextConsumer() {
+        return null;
+      }
+
+      function FactoryLegacyContextConsumer() {
+        return {
+          render() {
+            return null;
+          },
+        };
+      }
+
+      LegacyContextProvider.childContextTypes = {
+        color: PropTypes.string,
+      };
+
+      class LegacyContextConsumer extends React.Component {
+        render() {
+          return null;
+        }
+      }
+
+      const {StrictMode} = React;
+
+      class Root extends React.Component {
+        render() {
+          return (
+            <div>
+              <StrictMode>
+                <LegacyContextProvider />
+              </StrictMode>
+            </div>
+          );
+        }
+      }
+
+      LegacyContextConsumer.contextTypes = {
+        color: PropTypes.string,
+      };
+
+      FunctionalLegacyContextConsumer.contextTypes = {
+        color: PropTypes.string,
+      };
+
+      FactoryLegacyContextConsumer.contextTypes = {
+        color: PropTypes.string,
+      };
+
+      let rendered;
+
+      expect(() => {
+        rendered = ReactTestRenderer.create(<Root />);
+      }).toWarnDev(
+        'Warning: Legacy context API has been detected within a strict-mode tree: ' +
+          '\n    in StrictMode (at **)' +
+          '\n    in div (at **)' +
+          '\n    in Root (at **)' +
+          '\n\nPlease update the following components: FactoryLegacyContextConsumer, ' +
+          'FunctionalLegacyContextConsumer, LegacyContextConsumer, LegacyContextProvider' +
+          '\n\nLearn more about this warning here:' +
+          '\nhttps://fb.me/react-strict-mode-warnings',
+      );
+
+      // Dedupe
+      rendered = ReactTestRenderer.create(<Root />);
+      rendered.update(<Root />);
     });
   });
 });

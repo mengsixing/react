@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -14,14 +14,19 @@ let ReactFeatureFlags = require('shared/ReactFeatureFlags');
 
 let ReactDOM;
 
-const AsyncMode = React.unstable_AsyncMode;
+const ConcurrentMode = React.unstable_ConcurrentMode;
+
+const setUntrackedInputValue = Object.getOwnPropertyDescriptor(
+  HTMLInputElement.prototype,
+  'value',
+).set;
 
 describe('ReactDOMFiberAsync', () => {
   let container;
 
   beforeEach(() => {
     // TODO pull this into helper method, reduce repetition.
-    // mock the browser APIs which are used in react-scheduler:
+    // mock the browser APIs which are used in schedule:
     // - requestAnimationFrame should pass the DOMHighResTimeStamp argument
     // - calling 'window.postMessage' should actually fire postmessage handlers
     global.requestAnimationFrame = function(cb) {
@@ -47,6 +52,12 @@ describe('ReactDOMFiberAsync', () => {
     jest.resetModules();
     container = document.createElement('div');
     ReactDOM = require('react-dom');
+
+    document.body.appendChild(container);
+  });
+
+  afterEach(() => {
+    document.body.removeChild(container);
   });
 
   it('renders synchronously by default', () => {
@@ -60,27 +71,83 @@ describe('ReactDOMFiberAsync', () => {
     expect(ops).toEqual(['Hi', 'Bye']);
   });
 
+  it('does not perform deferred updates synchronously', () => {
+    let inputRef = React.createRef();
+    let asyncValueRef = React.createRef();
+    let syncValueRef = React.createRef();
+
+    class Counter extends React.Component {
+      state = {asyncValue: '', syncValue: ''};
+
+      handleChange = e => {
+        const nextValue = e.target.value;
+        requestIdleCallback(() => {
+          this.setState({
+            asyncValue: nextValue,
+          });
+          // It should not be flushed yet.
+          expect(asyncValueRef.current.textContent).toBe('');
+        });
+        this.setState({
+          syncValue: nextValue,
+        });
+      };
+
+      render() {
+        return (
+          <div>
+            <input
+              ref={inputRef}
+              onChange={this.handleChange}
+              defaultValue=""
+            />
+            <p ref={asyncValueRef}>{this.state.asyncValue}</p>
+            <p ref={syncValueRef}>{this.state.syncValue}</p>
+          </div>
+        );
+      }
+    }
+    ReactDOM.render(
+      <ConcurrentMode>
+        <Counter />
+      </ConcurrentMode>,
+      container,
+    );
+    expect(asyncValueRef.current.textContent).toBe('');
+    expect(syncValueRef.current.textContent).toBe('');
+
+    setUntrackedInputValue.call(inputRef.current, 'hello');
+    inputRef.current.dispatchEvent(new MouseEvent('input', {bubbles: true}));
+    // Should only flush non-deferred update.
+    expect(asyncValueRef.current.textContent).toBe('');
+    expect(syncValueRef.current.textContent).toBe('hello');
+
+    // Should flush both updates now.
+    jest.runAllTimers();
+    expect(asyncValueRef.current.textContent).toBe('hello');
+    expect(syncValueRef.current.textContent).toBe('hello');
+  });
+
   describe('with feature flag disabled', () => {
     beforeEach(() => {
       jest.resetModules();
       ReactFeatureFlags = require('shared/ReactFeatureFlags');
-      container = document.createElement('div');
       ReactDOM = require('react-dom');
     });
 
     it('renders synchronously', () => {
       ReactDOM.render(
-        <AsyncMode>
+        <ConcurrentMode>
           <div>Hi</div>
-        </AsyncMode>,
+        </ConcurrentMode>,
         container,
       );
       expect(container.textContent).toEqual('Hi');
 
       ReactDOM.render(
-        <AsyncMode>
+        <ConcurrentMode>
           <div>Bye</div>
-        </AsyncMode>,
+        </ConcurrentMode>,
         container,
       );
       expect(container.textContent).toEqual('Bye');
@@ -91,7 +158,6 @@ describe('ReactDOMFiberAsync', () => {
     beforeEach(() => {
       jest.resetModules();
       ReactFeatureFlags = require('shared/ReactFeatureFlags');
-      container = document.createElement('div');
       ReactFeatureFlags.debugRenderPhaseSideEffectsForStrictMode = false;
       ReactDOM = require('react-dom');
     });
@@ -131,7 +197,7 @@ describe('ReactDOMFiberAsync', () => {
       expect(container.textContent).toEqual('1');
     });
 
-    it('AsyncMode creates an async subtree', () => {
+    it('ConcurrentMode creates an async subtree', () => {
       let instance;
       class Component extends React.Component {
         state = {step: 0};
@@ -142,9 +208,9 @@ describe('ReactDOMFiberAsync', () => {
       }
 
       ReactDOM.render(
-        <AsyncMode>
+        <ConcurrentMode>
           <Component />
-        </AsyncMode>,
+        </ConcurrentMode>,
         container,
       );
       jest.runAllTimers();
@@ -167,9 +233,9 @@ describe('ReactDOMFiberAsync', () => {
 
       ReactDOM.render(
         <div>
-          <AsyncMode>
+          <ConcurrentMode>
             <Child />
-          </AsyncMode>
+          </ConcurrentMode>
         </div>,
         container,
       );
@@ -298,9 +364,9 @@ describe('ReactDOMFiberAsync', () => {
       }
 
       ReactDOM.render(
-        <AsyncMode>
+        <ConcurrentMode>
           <Component />
-        </AsyncMode>,
+        </ConcurrentMode>,
         container,
       );
       jest.runAllTimers();
@@ -343,9 +409,9 @@ describe('ReactDOMFiberAsync', () => {
         }
       }
       ReactDOM.render(
-        <AsyncMode>
+        <ConcurrentMode>
           <Counter />
-        </AsyncMode>,
+        </ConcurrentMode>,
         container,
       );
       expect(container.textContent).toEqual('0');
@@ -424,6 +490,192 @@ describe('ReactDOMFiberAsync', () => {
       });
       expect(container.textContent).toEqual('1');
       expect(returnValue).toBe(undefined);
+    });
+
+    it('ignores discrete events on a pending removed element', () => {
+      const disableButtonRef = React.createRef();
+      const submitButtonRef = React.createRef();
+
+      let formSubmitted = false;
+
+      class Form extends React.Component {
+        state = {active: true};
+        disableForm = () => {
+          this.setState({active: false});
+        };
+        submitForm = () => {
+          formSubmitted = true; // This should not get invoked
+        };
+        render() {
+          return (
+            <div>
+              <button onClick={this.disableForm} ref={disableButtonRef}>
+                Disable
+              </button>
+              {this.state.active ? (
+                <button onClick={this.submitForm} ref={submitButtonRef}>
+                  Submit
+                </button>
+              ) : null}
+            </div>
+          );
+        }
+      }
+
+      const root = ReactDOM.unstable_createRoot(container);
+      root.render(<Form />);
+      // Flush
+      jest.runAllTimers();
+
+      let disableButton = disableButtonRef.current;
+      expect(disableButton.tagName).toBe('BUTTON');
+
+      // Dispatch a click event on the Disable-button.
+      let firstEvent = document.createEvent('Event');
+      firstEvent.initEvent('click', true, true);
+      disableButton.dispatchEvent(firstEvent);
+
+      // There should now be a pending update to disable the form.
+
+      // This should not have flushed yet since it's in concurrent mode.
+      let submitButton = submitButtonRef.current;
+      expect(submitButton.tagName).toBe('BUTTON');
+
+      // In the meantime, we can dispatch a new client event on the submit button.
+      let secondEvent = document.createEvent('Event');
+      secondEvent.initEvent('click', true, true);
+      // This should force the pending update to flush which disables the submit button before the event is invoked.
+      submitButton.dispatchEvent(secondEvent);
+
+      // Therefore the form should never have been submitted.
+      expect(formSubmitted).toBe(false);
+
+      expect(submitButtonRef.current).toBe(null);
+    });
+
+    it('ignores discrete events on a pending removed event listener', () => {
+      const disableButtonRef = React.createRef();
+      const submitButtonRef = React.createRef();
+
+      let formSubmitted = false;
+
+      class Form extends React.Component {
+        state = {active: true};
+        disableForm = () => {
+          this.setState({active: false});
+        };
+        submitForm = () => {
+          formSubmitted = true; // This should not get invoked
+        };
+        disabledSubmitForm = () => {
+          // The form is disabled.
+        };
+        render() {
+          return (
+            <div>
+              <button onClick={this.disableForm} ref={disableButtonRef}>
+                Disable
+              </button>
+              <button
+                onClick={
+                  this.state.active ? this.submitForm : this.disabledSubmitForm
+                }
+                ref={submitButtonRef}>
+                Submit
+              </button>{' '}
+              : null}
+            </div>
+          );
+        }
+      }
+
+      const root = ReactDOM.unstable_createRoot(container);
+      root.render(<Form />);
+      // Flush
+      jest.runAllTimers();
+
+      let disableButton = disableButtonRef.current;
+      expect(disableButton.tagName).toBe('BUTTON');
+
+      // Dispatch a click event on the Disable-button.
+      let firstEvent = document.createEvent('Event');
+      firstEvent.initEvent('click', true, true);
+      disableButton.dispatchEvent(firstEvent);
+
+      // There should now be a pending update to disable the form.
+
+      // This should not have flushed yet since it's in concurrent mode.
+      let submitButton = submitButtonRef.current;
+      expect(submitButton.tagName).toBe('BUTTON');
+
+      // In the meantime, we can dispatch a new client event on the submit button.
+      let secondEvent = document.createEvent('Event');
+      secondEvent.initEvent('click', true, true);
+      // This should force the pending update to flush which disables the submit button before the event is invoked.
+      submitButton.dispatchEvent(secondEvent);
+
+      // Therefore the form should never have been submitted.
+      expect(formSubmitted).toBe(false);
+    });
+
+    it('uses the newest discrete events on a pending changed event listener', () => {
+      const enableButtonRef = React.createRef();
+      const submitButtonRef = React.createRef();
+
+      let formSubmitted = false;
+
+      class Form extends React.Component {
+        state = {active: false};
+        enableForm = () => {
+          this.setState({active: true});
+        };
+        submitForm = () => {
+          formSubmitted = true; // This should happen
+        };
+        render() {
+          return (
+            <div>
+              <button onClick={this.enableForm} ref={enableButtonRef}>
+                Enable
+              </button>
+              <button
+                onClick={this.state.active ? this.submitForm : null}
+                ref={submitButtonRef}>
+                Submit
+              </button>{' '}
+              : null}
+            </div>
+          );
+        }
+      }
+
+      const root = ReactDOM.unstable_createRoot(container);
+      root.render(<Form />);
+      // Flush
+      jest.runAllTimers();
+
+      let enableButton = enableButtonRef.current;
+      expect(enableButton.tagName).toBe('BUTTON');
+
+      // Dispatch a click event on the Enable-button.
+      let firstEvent = document.createEvent('Event');
+      firstEvent.initEvent('click', true, true);
+      enableButton.dispatchEvent(firstEvent);
+
+      // There should now be a pending update to enable the form.
+
+      // This should not have flushed yet since it's in concurrent mode.
+      let submitButton = submitButtonRef.current;
+      expect(submitButton.tagName).toBe('BUTTON');
+
+      // In the meantime, we can dispatch a new client event on the submit button.
+      let secondEvent = document.createEvent('Event');
+      secondEvent.initEvent('click', true, true);
+      // This should force the pending update to flush which enables the submit button before the event is invoked.
+      submitButton.dispatchEvent(secondEvent);
+
+      // Therefore the form should have been submitted.
+      expect(formSubmitted).toBe(true);
     });
   });
 });

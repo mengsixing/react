@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -410,6 +410,7 @@ describe('ReactCompositeComponent-state', () => {
       'Warning: Test.componentWillReceiveProps(): Assigning directly to ' +
         "this.state is deprecated (except inside a component's constructor). " +
         'Use setState instead.',
+      {withoutStack: true},
     );
 
     expect(ops).toEqual([
@@ -451,6 +452,7 @@ describe('ReactCompositeComponent-state', () => {
       'Warning: Test.componentWillMount(): Assigning directly to ' +
         "this.state is deprecated (except inside a component's constructor). " +
         'Use setState instead.',
+      {withoutStack: true},
     );
 
     expect(ops).toEqual([

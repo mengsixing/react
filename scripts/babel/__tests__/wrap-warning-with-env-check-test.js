@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -37,6 +37,13 @@ describe('wrap-warning-with-env-check', () => {
     compare(
       "warning(condition, 'a %s b', 'c');",
       "__DEV__ ? !condition ? warning(false, 'a %s b', 'c') : void 0 : void 0;"
+    );
+  });
+
+  it('should wrap warningWithoutStack calls', () => {
+    compare(
+      "warningWithoutStack(condition, 'a %s b', 'c');",
+      "__DEV__ ? !condition ? warningWithoutStack(false, 'a %s b', 'c') : void 0 : void 0;"
     );
   });
 

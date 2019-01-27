@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -43,19 +43,22 @@ describe('ReactComponentLifeCycle', () => {
     const container = document.createElement('div');
     expect(() =>
       ReactDOM.render(<MyComponent x={1} />, container),
-    ).toLowPriorityWarnDev([
-      'componentWillMount is deprecated and will be removed in the next major version. ' +
-        'Use componentDidMount instead. As a temporary workaround, ' +
-        'you can rename to UNSAFE_componentWillMount.' +
-        '\n\nPlease update the following components: MyComponent',
-      'componentWillReceiveProps is deprecated and will be removed in the next major version. ' +
-        'Use static getDerivedStateFromProps instead.' +
-        '\n\nPlease update the following components: MyComponent',
-      'componentWillUpdate is deprecated and will be removed in the next major version. ' +
-        'Use componentDidUpdate instead. As a temporary workaround, ' +
-        'you can rename to UNSAFE_componentWillUpdate.' +
-        '\n\nPlease update the following components: MyComponent',
-    ]);
+    ).toLowPriorityWarnDev(
+      [
+        'componentWillMount is deprecated and will be removed in the next major version. ' +
+          'Use componentDidMount instead. As a temporary workaround, ' +
+          'you can rename to UNSAFE_componentWillMount.' +
+          '\n\nPlease update the following components: MyComponent',
+        'componentWillReceiveProps is deprecated and will be removed in the next major version. ' +
+          'Use static getDerivedStateFromProps instead.' +
+          '\n\nPlease update the following components: MyComponent',
+        'componentWillUpdate is deprecated and will be removed in the next major version. ' +
+          'Use componentDidUpdate instead. As a temporary workaround, ' +
+          'you can rename to UNSAFE_componentWillUpdate.' +
+          '\n\nPlease update the following components: MyComponent',
+      ],
+      {withoutStack: true},
+    );
 
     // Dedupe check (update and instantiate new
     ReactDOM.render(<MyComponent x={2} />, container);

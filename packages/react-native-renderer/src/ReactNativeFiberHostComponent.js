@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -14,14 +14,17 @@ import type {
   NativeMethodsMixinType,
   ReactNativeBaseComponentViewConfig,
 } from './ReactNativeTypes';
-import type {Instance} from './ReactNativeFiberRenderer';
+import type {Instance} from './ReactNativeHostConfig';
 
 // Modules provided by RN:
 import TextInputState from 'TextInputState';
 import UIManager from 'UIManager';
 
-import * as ReactNativeAttributePayload from './ReactNativeAttributePayload';
-import {mountSafeCallback, warnForStyleProps} from './NativeMethodsMixinUtils';
+import {create} from './ReactNativeAttributePayload';
+import {
+  mountSafeCallback_NOT_REALLY_SAFE,
+  warnForStyleProps,
+} from './NativeMethodsMixinUtils';
 
 /**
  * This component defines the same methods as NativeMethodsMixin but without the
@@ -33,9 +36,9 @@ import {mountSafeCallback, warnForStyleProps} from './NativeMethodsMixinUtils';
 class ReactNativeFiberHostComponent {
   _children: Array<Instance | number>;
   _nativeTag: number;
-  viewConfig: ReactNativeBaseComponentViewConfig;
+  viewConfig: ReactNativeBaseComponentViewConfig<>;
 
-  constructor(tag: number, viewConfig: ReactNativeBaseComponentViewConfig) {
+  constructor(tag: number, viewConfig: ReactNativeBaseComponentViewConfig<>) {
     this._nativeTag = tag;
     this._children = [];
     this.viewConfig = viewConfig;
@@ -50,13 +53,16 @@ class ReactNativeFiberHostComponent {
   }
 
   measure(callback: MeasureOnSuccessCallback) {
-    UIManager.measure(this._nativeTag, mountSafeCallback(this, callback));
+    UIManager.measure(
+      this._nativeTag,
+      mountSafeCallback_NOT_REALLY_SAFE(this, callback),
+    );
   }
 
   measureInWindow(callback: MeasureInWindowOnSuccessCallback) {
     UIManager.measureInWindow(
       this._nativeTag,
-      mountSafeCallback(this, callback),
+      mountSafeCallback_NOT_REALLY_SAFE(this, callback),
     );
   }
 
@@ -68,8 +74,8 @@ class ReactNativeFiberHostComponent {
     UIManager.measureLayout(
       this._nativeTag,
       relativeToNativeNode,
-      mountSafeCallback(this, onFail),
-      mountSafeCallback(this, onSuccess),
+      mountSafeCallback_NOT_REALLY_SAFE(this, onFail),
+      mountSafeCallback_NOT_REALLY_SAFE(this, onSuccess),
     );
   }
 
@@ -78,10 +84,7 @@ class ReactNativeFiberHostComponent {
       warnForStyleProps(nativeProps, this.viewConfig.validAttributes);
     }
 
-    const updatePayload = ReactNativeAttributePayload.create(
-      nativeProps,
-      this.viewConfig.validAttributes,
-    );
+    const updatePayload = create(nativeProps, this.viewConfig.validAttributes);
 
     // Avoid the overhead of bridge calls if there's no update.
     // This is an expensive no-op for Android, and causes an unnecessary

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -1226,6 +1226,7 @@ describe('ReactUpdates', () => {
     const container = document.createElement('div');
     expect(() => ReactDOM.render(<Foo />, container)).toWarnDev(
       'Cannot update during an existing state transition',
+      {withoutStack: true},
     );
     expect(ops).toEqual(['base: 0, memoized: 0', 'base: 1, memoized: 1']);
   });
@@ -1342,6 +1343,9 @@ describe('ReactUpdates', () => {
 
     class ErrorBoundary extends React.Component {
       componentDidCatch() {
+        // Schedule a no-op state update to avoid triggering a DEV warning in the test.
+        this.setState({});
+
         this.props.parent.remount();
       }
       render() {
@@ -1363,5 +1367,38 @@ describe('ReactUpdates', () => {
     expect(() => {
       ReactDOM.render(<NonTerminating />, container);
     }).toThrow('Maximum');
+  });
+
+  it('can schedule ridiculously many updates within the same batch without triggering a maximum update error', () => {
+    const subscribers = [];
+
+    class Child extends React.Component {
+      state = {value: 'initial'};
+      componentDidMount() {
+        subscribers.push(this);
+      }
+      render() {
+        return null;
+      }
+    }
+
+    class App extends React.Component {
+      render() {
+        const children = [];
+        for (let i = 0; i < 1200; i++) {
+          children.push(<Child key={i} />);
+        }
+        return children;
+      }
+    }
+
+    const container = document.createElement('div');
+    ReactDOM.render(<App />, container);
+
+    ReactDOM.unstable_batchedUpdates(() => {
+      subscribers.forEach(s => {
+        s.setState({value: 'update'});
+      });
+    });
   });
 });

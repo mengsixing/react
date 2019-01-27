@@ -1,12 +1,12 @@
 /**
- * Copyright (c) 2014-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
 
-import invariant from 'fbjs/lib/invariant';
-import warning from 'fbjs/lib/warning';
+import invariant from 'shared/invariant';
+import warningWithoutStack from 'shared/warningWithoutStack';
 import {REACT_ELEMENT_TYPE} from 'shared/ReactSymbols';
 
 import ReactCurrentOwner from './ReactCurrentOwner';
@@ -50,7 +50,7 @@ function defineKeyPropWarningGetter(props, displayName) {
   const warnAboutAccessingKey = function() {
     if (!specialPropKeyWarningShown) {
       specialPropKeyWarningShown = true;
-      warning(
+      warningWithoutStack(
         false,
         '%s: `key` is not a prop. Trying to access it will result ' +
           'in `undefined` being returned. If you need to access the same ' +
@@ -71,7 +71,7 @@ function defineRefPropWarningGetter(props, displayName) {
   const warnAboutAccessingRef = function() {
     if (!specialPropRefWarningShown) {
       specialPropRefWarningShown = true;
-      warning(
+      warningWithoutStack(
         false,
         '%s: `ref` is not a prop. Trying to access it will result ' +
           'in `undefined` being returned. If you need to access the same ' +
@@ -229,20 +229,15 @@ export function createElement(type, config, children) {
   }
   if (__DEV__) {
     if (key || ref) {
-      if (
-        typeof props.$$typeof === 'undefined' ||
-        props.$$typeof !== REACT_ELEMENT_TYPE
-      ) {
-        const displayName =
-          typeof type === 'function'
-            ? type.displayName || type.name || 'Unknown'
-            : type;
-        if (key) {
-          defineKeyPropWarningGetter(props, displayName);
-        }
-        if (ref) {
-          defineRefPropWarningGetter(props, displayName);
-        }
+      const displayName =
+        typeof type === 'function'
+          ? type.displayName || type.name || 'Unknown'
+          : type;
+      if (key) {
+        defineKeyPropWarningGetter(props, displayName);
+      }
+      if (ref) {
+        defineRefPropWarningGetter(props, displayName);
       }
     }
   }
@@ -365,7 +360,7 @@ export function cloneElement(element, config, children) {
  * Verifies the object is a ReactElement.
  * See https://reactjs.org/docs/react-api.html#isvalidelement
  * @param {?object} object
- * @return {boolean} True if `object` is a valid component.
+ * @return {boolean} True if `object` is a ReactElement.
  * @final
  */
 export function isValidElement(object) {

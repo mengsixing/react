@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -8,8 +8,8 @@
  */
 
 // Relying on the `invariant()` implementation lets us
-// have preserve the format and params in the www builds.
-import invariant from 'fbjs/lib/invariant';
+// preserve the format and params in the www builds.
+import invariant from 'shared/invariant';
 
 /**
  * WARNING: DO NOT manually require this module.
@@ -19,11 +19,11 @@ import invariant from 'fbjs/lib/invariant';
  */
 function reactProdInvariant(code: string): void {
   const argCount = arguments.length - 1;
-  let url = 'http://reactjs.org/docs/error-decoder.html?invariant=' + code;
+  let url = 'https://reactjs.org/docs/error-decoder.html?invariant=' + code;
   for (let argIdx = 0; argIdx < argCount; argIdx++) {
     url += '&args[]=' + encodeURIComponent(arguments[argIdx + 1]);
   }
-  // Rename it so that our build transform doesn't atttempt
+  // Rename it so that our build transform doesn't attempt
   // to replace this invariant() call with reactProdInvariant().
   const i = invariant;
   i(

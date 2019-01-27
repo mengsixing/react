@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -15,14 +15,14 @@ import type {
   ReactNativeBaseComponentViewConfig,
 } from './ReactNativeTypes';
 
-import invariant from 'fbjs/lib/invariant';
+import invariant from 'shared/invariant';
 // Modules provided by RN:
 import TextInputState from 'TextInputState';
 import UIManager from 'UIManager';
 
-import * as ReactNativeAttributePayload from './ReactNativeAttributePayload';
+import {create} from './ReactNativeAttributePayload';
 import {
-  mountSafeCallback,
+  mountSafeCallback_NOT_REALLY_SAFE,
   throwOnStylesProp,
   warnForStyleProps,
 } from './NativeMethodsMixinUtils';
@@ -67,7 +67,7 @@ export default function(
     measure: function(callback: MeasureOnSuccessCallback) {
       UIManager.measure(
         findNodeHandle(this),
-        mountSafeCallback(this, callback),
+        mountSafeCallback_NOT_REALLY_SAFE(this, callback),
       );
     },
 
@@ -89,7 +89,7 @@ export default function(
     measureInWindow: function(callback: MeasureInWindowOnSuccessCallback) {
       UIManager.measureInWindow(
         findNodeHandle(this),
-        mountSafeCallback(this, callback),
+        mountSafeCallback_NOT_REALLY_SAFE(this, callback),
       );
     },
 
@@ -109,8 +109,8 @@ export default function(
       UIManager.measureLayout(
         findNodeHandle(this),
         relativeToNativeNode,
-        mountSafeCallback(this, onFail),
-        mountSafeCallback(this, onSuccess),
+        mountSafeCallback_NOT_REALLY_SAFE(this, onFail),
+        mountSafeCallback_NOT_REALLY_SAFE(this, onSuccess),
       );
     },
 
@@ -142,17 +142,14 @@ export default function(
         return;
       }
 
-      const viewConfig: ReactNativeBaseComponentViewConfig =
+      const viewConfig: ReactNativeBaseComponentViewConfig<> =
         maybeInstance.viewConfig;
 
       if (__DEV__) {
         warnForStyleProps(nativeProps, viewConfig.validAttributes);
       }
 
-      const updatePayload = ReactNativeAttributePayload.create(
-        nativeProps,
-        viewConfig.validAttributes,
-      );
+      const updatePayload = create(nativeProps, viewConfig.validAttributes);
 
       // Avoid the overhead of bridge calls if there's no update.
       // This is an expensive no-op for Android, and causes an unnecessary

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -21,8 +21,8 @@ import React from 'react';
 import TextInputState from 'TextInputState';
 import UIManager from 'UIManager';
 
-import * as ReactNativeAttributePayload from './ReactNativeAttributePayload';
-import {mountSafeCallback} from './NativeMethodsMixinUtils';
+import {create} from './ReactNativeAttributePayload';
+import {mountSafeCallback_NOT_REALLY_SAFE} from './NativeMethodsMixinUtils';
 
 export default function(
   findNodeHandle: any => ?number,
@@ -82,7 +82,7 @@ export default function(
     measure(callback: MeasureOnSuccessCallback): void {
       UIManager.measure(
         findNodeHandle(this),
-        mountSafeCallback(this, callback),
+        mountSafeCallback_NOT_REALLY_SAFE(this, callback),
       );
     }
 
@@ -102,7 +102,7 @@ export default function(
     measureInWindow(callback: MeasureInWindowOnSuccessCallback): void {
       UIManager.measureInWindow(
         findNodeHandle(this),
-        mountSafeCallback(this, callback),
+        mountSafeCallback_NOT_REALLY_SAFE(this, callback),
       );
     }
 
@@ -120,8 +120,8 @@ export default function(
       UIManager.measureLayout(
         findNodeHandle(this),
         relativeToNativeNode,
-        mountSafeCallback(this, onFail),
-        mountSafeCallback(this, onSuccess),
+        mountSafeCallback_NOT_REALLY_SAFE(this, onFail),
+        mountSafeCallback_NOT_REALLY_SAFE(this, onSuccess),
       );
     }
 
@@ -153,13 +153,10 @@ export default function(
         return;
       }
 
-      const viewConfig: ReactNativeBaseComponentViewConfig =
+      const viewConfig: ReactNativeBaseComponentViewConfig<> =
         maybeInstance.viewConfig || maybeInstance.canonical.viewConfig;
 
-      const updatePayload = ReactNativeAttributePayload.create(
-        nativeProps,
-        viewConfig.validAttributes,
-      );
+      const updatePayload = create(nativeProps, viewConfig.validAttributes);
 
       // Avoid the overhead of bridge calls if there's no update.
       // This is an expensive no-op for Android, and causes an unnecessary

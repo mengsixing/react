@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -7,7 +7,7 @@
  * @flow
  */
 
-import invariant from 'fbjs/lib/invariant';
+import invariant from 'shared/invariant';
 
 import typeof * as FeatureFlagsType from 'shared/ReactFeatureFlags';
 import typeof * as PersistentFeatureFlagsType from './ReactFeatureFlags.persistent';
@@ -15,12 +15,15 @@ import typeof * as PersistentFeatureFlagsType from './ReactFeatureFlags.persiste
 export const debugRenderPhaseSideEffects = false;
 export const debugRenderPhaseSideEffectsForStrictMode = false;
 export const enableUserTimingAPI = __DEV__;
-export const enableGetDerivedStateFromCatch = false;
 export const warnAboutDeprecatedLifecycles = false;
 export const replayFailedUnitOfWorkWithInvokeGuardedCallback = false;
-export const enableMutatingReconciler = true;
-export const enableNoopReconciler = false;
-export const enablePersistentReconciler = false;
+export const enableProfilerTimer = false;
+export const enableSchedulerTracing = false;
+export const enableSuspenseServerRenderer = false;
+export const disableInputAttributeSyncing = false;
+export const enableStableConcurrentModeAPIs = false;
+export const warnAboutShorthandPropertyCollision = false;
+export const enableSchedulerDebugging = false;
 
 // Only used in www builds.
 export function addUserTimingListener() {

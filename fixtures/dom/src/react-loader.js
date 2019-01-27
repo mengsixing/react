@@ -1,3 +1,5 @@
+import semver from 'semver';
+
 /**
  * Take a version from the window query string and load a specific
  * version of React.
@@ -34,36 +36,67 @@ function loadScript(src) {
   });
 }
 
-export default function loadReact() {
-  let REACT_PATH = 'react.development.js';
-  let DOM_PATH = 'react-dom.development.js';
-
+export function reactPaths() {
   let query = parseQuery(window.location.search);
   let version = query.version || 'local';
+  let isProduction = query.production === 'true';
+
+  let environment = isProduction ? 'production.min' : 'development';
+
+  let reactPath = 'react.' + environment + '.js';
+  let reactDOMPath = 'react-dom.' + environment + '.js';
+  let reactDOMServerPath = 'react-dom-server.browser.' + environment + '.js';
 
   if (version !== 'local') {
+    const {major, minor, prerelease} = semver(version);
+    const [preReleaseStage] = prerelease;
     // The file structure was updated in 16. This wasn't the case for alphas.
     // Load the old module location for anything less than 16 RC
-    if (parseInt(version, 10) >= 16 && version.indexOf('alpha') < 0) {
-      REACT_PATH =
-        'https://unpkg.com/react@' + version + '/umd/react.development.js';
-      DOM_PATH =
+    if (major >= 16 && !(minor === 0 && preReleaseStage === 'alpha')) {
+      reactPath =
+        'https://unpkg.com/react@' +
+        version +
+        '/umd/react.' +
+        environment +
+        '.js';
+      reactDOMPath =
         'https://unpkg.com/react-dom@' +
         version +
-        '/umd/react-dom.development.js';
+        '/umd/react-dom.' +
+        environment +
+        '.js';
+      reactDOMServerPath =
+        'https://unpkg.com/react-dom@' +
+        version +
+        '/umd/react-dom-server.browser.' +
+        environment +
+        '.js';
     } else {
-      REACT_PATH = 'https://unpkg.com/react@' + version + '/dist/react.js';
-      DOM_PATH =
-        'https://unpkg.com/react-dom@' + version + '/dist/react-dom.js';
+      let suffix = isProduction ? '.min.js' : '.js';
+
+      reactPath = 'https://unpkg.com/react@' + version + '/dist/react' + suffix;
+      reactDOMPath =
+        'https://unpkg.com/react-dom@' + version + '/dist/react-dom' + suffix;
+      reactDOMServerPath =
+        'https://unpkg.com/react-dom@' +
+        version +
+        '/dist/react-dom-server' +
+        suffix;
     }
   }
 
   const needsReactDOM = version === 'local' || parseFloat(version, 10) > 0.13;
 
-  let request = loadScript(REACT_PATH);
+  return {reactPath, reactDOMPath, reactDOMServerPath, needsReactDOM};
+}
+
+export default function loadReact() {
+  const {reactPath, reactDOMPath, needsReactDOM} = reactPaths();
+
+  let request = loadScript(reactPath);
 
   if (needsReactDOM) {
-    request = request.then(() => loadScript(DOM_PATH));
+    request = request.then(() => loadScript(reactDOMPath));
   } else {
     // Aliasing React to ReactDOM for compatibility.
     request = request.then(() => {

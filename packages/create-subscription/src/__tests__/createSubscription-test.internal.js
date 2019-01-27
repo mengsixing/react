@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -450,7 +450,9 @@ describe('createSubscription', () => {
           },
           () => null,
         );
-      }).toWarnDev('Subscription must specify a getCurrentValue function');
+      }).toWarnDev('Subscription must specify a getCurrentValue function', {
+        withoutStack: true,
+      });
     });
 
     it('should warn for invalid missing subscribe', () => {
@@ -461,7 +463,9 @@ describe('createSubscription', () => {
           },
           () => null,
         );
-      }).toWarnDev('Subscription must specify a subscribe function');
+      }).toWarnDev('Subscription must specify a subscribe function', {
+        withoutStack: true,
+      });
     });
 
     it('should warn if subscribe does not return an unsubscribe method', () => {

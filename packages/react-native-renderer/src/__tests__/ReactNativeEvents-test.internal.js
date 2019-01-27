@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -74,14 +74,14 @@ beforeEach(() => {
 });
 
 it('fails if unknown/unsupported event types are dispatched', () => {
-  expect(RCTEventEmitter.register.mock.calls.length).toBe(1);
+  expect(RCTEventEmitter.register).toHaveBeenCalledTimes(1);
   const EventEmitter = RCTEventEmitter.register.mock.calls[0][0];
   const View = fakeRequireNativeComponent('View', {});
 
   ReactNative.render(<View onUnspecifiedEvent={() => {}} />, 1);
 
   expect(UIManager.__dumpHierarchyForJestTestsOnly()).toMatchSnapshot();
-  expect(UIManager.createView.mock.calls.length).toBe(1);
+  expect(UIManager.createView).toHaveBeenCalledTimes(1);
 
   const target = UIManager.createView.mock.calls[0][0];
 
@@ -95,7 +95,7 @@ it('fails if unknown/unsupported event types are dispatched', () => {
 });
 
 it('handles events', () => {
-  expect(RCTEventEmitter.register.mock.calls.length).toBe(1);
+  expect(RCTEventEmitter.register).toHaveBeenCalledTimes(1);
   const EventEmitter = RCTEventEmitter.register.mock.calls[0][0];
   const View = fakeRequireNativeComponent('View', {foo: true});
 
@@ -119,7 +119,7 @@ it('handles events', () => {
   );
 
   expect(UIManager.__dumpHierarchyForJestTestsOnly()).toMatchSnapshot();
-  expect(UIManager.createView.mock.calls.length).toBe(2);
+  expect(UIManager.createView).toHaveBeenCalledTimes(2);
 
   // Don't depend on the order of createView() calls.
   // Stack creates views outside-in; fiber creates them inside-out.
@@ -151,9 +151,9 @@ it('handles events', () => {
 });
 
 it('handles events on text nodes', () => {
-  expect(RCTEventEmitter.register.mock.calls.length).toBe(1);
+  expect(RCTEventEmitter.register).toHaveBeenCalledTimes(1);
   const EventEmitter = RCTEventEmitter.register.mock.calls[0][0];
-  const Text = fakeRequireNativeComponent('Text', {});
+  const Text = fakeRequireNativeComponent('RCTText', {});
 
   class ContextHack extends React.Component {
     static childContextTypes = {isInAParentText: PropTypes.bool};
@@ -188,7 +188,7 @@ it('handles events on text nodes', () => {
     1,
   );
 
-  expect(UIManager.createView.mock.calls.length).toBe(5);
+  expect(UIManager.createView).toHaveBeenCalledTimes(5);
 
   // Don't depend on the order of createView() calls.
   // Stack creates views outside-in; fiber creates them inside-out.

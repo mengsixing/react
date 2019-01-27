@@ -1,22 +1,28 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
 
-import emptyObject from 'fbjs/lib/emptyObject';
-import invariant from 'fbjs/lib/invariant';
+import invariant from 'shared/invariant';
 import lowPriorityWarning from 'shared/lowPriorityWarning';
 
 import ReactNoopUpdateQueue from './ReactNoopUpdateQueue';
 
+const emptyObject = {};
+if (__DEV__) {
+  Object.freeze(emptyObject);
+}
+
 /**
  * Base class helpers for the updating state of a component.
+ * updater 根据不同平台传递不同的渲染实例（react, reactnative...）
  */
 function Component(props, context, updater) {
   this.props = props;
   this.context = context;
+  // If a component has string refs, we will assign a different object later.
   this.refs = emptyObject;
   // We initialize the default updater but the real one gets injected by the
   // renderer.
@@ -126,10 +132,12 @@ ComponentDummy.prototype = Component.prototype;
 function PureComponent(props, context, updater) {
   this.props = props;
   this.context = context;
+  // If a component has string refs, we will assign a different object later.
   this.refs = emptyObject;
   this.updater = updater || ReactNoopUpdateQueue;
 }
 
+// 寄生组合继承
 const pureComponentPrototype = (PureComponent.prototype = new ComponentDummy());
 pureComponentPrototype.constructor = PureComponent;
 // Avoid an extra prototype jump for these methods.
