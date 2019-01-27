@@ -17,6 +17,7 @@ if (__DEV__) {
 
 /**
  * Base class helpers for the updating state of a component.
+ * updater 根据不同平台传递不同的渲染实例（react, reactnative...）
  */
 function Component(props, context, updater) {
   this.props = props;
@@ -136,6 +137,7 @@ function PureComponent(props, context, updater) {
   this.updater = updater || ReactNoopUpdateQueue;
 }
 
+// 寄生组合继承
 const pureComponentPrototype = (PureComponent.prototype = new ComponentDummy());
 pureComponentPrototype.constructor = PureComponent;
 // Avoid an extra prototype jump for these methods.
